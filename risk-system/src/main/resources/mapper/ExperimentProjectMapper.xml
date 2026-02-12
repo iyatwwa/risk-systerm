@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.lab.risk.mapper.ExperimentProjectMapper">
+
+    <!-- 结果映射 -->
+    <resultMap id="BaseResultMap" type="com.lab.risk.entity.ExperimentProject">
+        <id column="id" property="id" jdbcType="BIGINT"/>
+        <result column="project_code" property="projectCode" jdbcType="VARCHAR"/>
+        <result column="project_name" property="projectName" jdbcType="VARCHAR"/>
+        <result column="experiment_type" property="experimentType" jdbcType="INTEGER"/>
+        <result column="danger_level" property="dangerLevel" jdbcType="INTEGER"/>
+        <result column="applicant_id" property="applicantId" jdbcType="BIGINT"/>
+        <result column="applicant_name" property="applicantName" jdbcType="VARCHAR"/>
+        <result column="location" property="location" jdbcType="VARCHAR"/>
+        <result column="participant_count" property="participantCount" jdbcType="INTEGER"/>
+        <result column="duration" property="duration" jdbcType="INTEGER"/>
+        <result column="has_dangerous_chemicals" property="hasDangerousChemicals" jdbcType="BOOLEAN"/>
+        <result column="chemical_names" property="chemicalNames" jdbcType="VARCHAR"/>
+        <result column="has_bio_safety" property="hasBioSafety" jdbcType="BOOLEAN"/>
+        <result column="bio_safety_level" property="bioSafetyLevel" jdbcType="INTEGER"/>
+        <result column="has_radiation" property="hasRadiation" jdbcType="BOOLEAN"/>
+        <result column="radiation_dose" property="radiationDose" jdbcType="VARCHAR"/>
+        <result column="has_qualification" property="hasQualification" jdbcType="BOOLEAN"/>
+        <result column="has_emergency_plan" property="hasEmergencyPlan" jdbcType="BOOLEAN"/>
+        <result column="description" property="description" jdbcType="VARCHAR"/>
+        <result column="risk_score" property="riskScore" jdbcType="INTEGER"/>
+        <result column="risk_level" property="riskLevel" jdbcType="VARCHAR"/>
+        <result column="status" property="status" jdbcType="VARCHAR"/>
+        <result column="create_time" property="createTime" jdbcType="TIMESTAMP"/>
+        <result column="update_time" property="updateTime" jdbcType="TIMESTAMP"/>
+        <result column="deleted" property="deleted" jdbcType="INTEGER"/>
+    </resultMap>
+
+    <!-- 通用SQL片段 -->
+    <sql id="Base_Column_List">
+        id, project_code, project_name, experiment_type, danger_level, applicant_id, applicant_name,
+        location, participant_count, duration, has_dangerous_chemicals, chemical_names,
+        has_bio_safety, bio_safety_level, has_radiation, radiation_dose,
+        has_qualification, has_emergency_plan, description, risk_score, risk_level,
+        status, create_time, update_time, deleted
+    </sql>
+
+    <!-- 分页查询实验项目 -->
+    <select id="selectProjectPage" resultMap="BaseResultMap">
+        SELECT
+        <include refid="Base_Column_List"/>
+        FROM t_experiment_project
+        <where>
+            deleted = 0
+            <if test="projectName != null and projectName != ''">
+                AND project_name LIKE CONCAT('%', #{projectName}, '%')
+            </if>
+            <if test="experimentType != null">
+                AND experiment_type = #{experimentType}
+            </if>
+            <if test="riskLevel != null and riskLevel != ''">
+                AND risk_level = #{riskLevel}
+            </if>
+            <if test="status != null and status != ''">
+                AND status = #{status}
+            </if>
+        </where>
+        ORDER BY create_time DESC
+    </select>
+
+    <!-- 批量更新项目状态 -->
+    <update id="batchUpdateStatus">
+        UPDATE t_experiment_project
+        SET status = #{status}
+        WHERE id IN
+        <foreach collection="projectIds" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+        AND deleted = 0
+    </update>
+
+</mapper>

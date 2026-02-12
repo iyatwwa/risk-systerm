@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.lab.risk.mapper.RiskAssessmentMapper">
+
+    <!-- 结果映射 -->
+    <resultMap id="BaseResultMap" type="com.lab.risk.entity.RiskAssessment">
+        <id column="id" property="id" jdbcType="BIGINT"/>
+        <result column="project_id" property="projectId" jdbcType="BIGINT"/>
+        <result column="project_code" property="projectCode" jdbcType="VARCHAR"/>
+        <result column="assessment_type" property="assessmentType" jdbcType="VARCHAR"/>
+        <result column="risk_score" property="riskScore" jdbcType="INTEGER"/>
+        <result column="risk_level" property="riskLevel" jdbcType="INTEGER"/>
+        <result column="assessment_detail" property="assessmentDetail" jdbcType="VARCHAR"/>
+        <result column="triggered_rules" property="triggeredRules" jdbcType="VARCHAR"/>
+        <result column="risk_items" property="riskItems" jdbcType="VARCHAR"/>
+        <result column="suggestions" property="suggestions" jdbcType="VARCHAR"/>
+        <result column="required_approval_level" property="requiredApprovalLevel" jdbcType="INTEGER"/>
+        <result column="assessor_id" property="assessorId" jdbcType="BIGINT"/>
+        <result column="assessed_time" property="assessedTime" jdbcType="TIMESTAMP"/>
+        <result column="remark" property="remark" jdbcType="VARCHAR"/>
+    </resultMap>
+
+    <!-- 通用SQL片段 -->
+    <sql id="Base_Column_List">
+        id, project_id, project_code, assessment_type, risk_score, risk_level,
+        assessment_detail, triggered_rules, risk_items, suggestions,
+        required_approval_level, assessor_id, assessed_time, remark
+    </sql>
+
+    <!-- 分页查询评估记录 -->
+    <select id="selectAssessmentPage" resultMap="BaseResultMap">
+        SELECT
+        <include refid="Base_Column_List"/>
+        FROM t_risk_assessment
+        <where>
+            <if test="projectId != null">
+                AND project_id = #{projectId}
+            </if>
+            <if test="assessmentType != null and assessmentType != ''">
+                AND assessment_type = #{assessmentType}
+            </if>
+            <if test="riskLevel != null">
+                AND risk_level = #{riskLevel}
+            </if>
+        </where>
+        ORDER BY assessed_time DESC
+    </select>
+
+    <!-- 查询触发次数最多的规则TOP N -->
+    <select id="selectTopTriggeredRules" resultType="map">
+        SELECT
+            SUBSTRING_INDEX(SUBSTRING_INDEX(triggered_rules, ',', n.n), ',', -1) AS rule_name,
+            COUNT(*) AS trigger_count
+        FROM t_risk_assessment
+                 CROSS JOIN (
+            SELECT 1 AS n UNION ALL SELECT 2 UNION ALL SELECT 3 UNION ALL SELECT 4 UNION ALL SELECT 5
+            UNION ALL SELECT 6 UNION ALL SELECT 7 UNION ALL SELECT 8 UNION ALL SELECT 9 UNION ALL SELECT 10
+        ) n
+        WHERE CHAR_LENGTH(triggered_rules) - CHAR_LENGTH(REPLACE(triggered_rules, ',', '')) >= n.n - 1
+        GROUP BY rule_name
+        ORDER BY trigger_count DESC
+        LIMIT #{limit}
+    </select>
+
+</mapper>

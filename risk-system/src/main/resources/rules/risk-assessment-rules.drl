@@ -1,0 +1,178 @@
+package rules;
+
+import com.lab.risk.entity.ExperimentProject;
+import com.lab.risk.entity.RiskFactor;
+import com.lab.risk.dto.AssessmentResultDTO;
+import com.lab.risk.enums.ExperimentType;
+import com.lab.risk.enums.DangerLevel;
+
+// 全局变量声明
+global AssessmentResultDTO result;
+
+// ========== 规则1: 化学实验高危险等级 ==========
+rule "化学实验高危险等级"
+    salience 100
+    when
+        $project : ExperimentProject(
+            experimentType == ExperimentType.CHEMISTRY,
+            dangerLevel == DangerLevel.LEVEL_4 || dangerLevel == DangerLevel.LEVEL_5
+        )
+    then
+        RiskFactor factor = new RiskFactor("化学实验高危", 30, "化学实验且危险等级为4或5级", "化学实验高危险等级");
+        result.addRiskFactor(factor);
+        result.addSuggestion("需配备专业防护设备和应急处理设施");
+        result.addSuggestion("必须由具有高级资质的指导教师全程监督");
+end
+
+// ========== 规则2: 涉及危险化学品 ==========
+rule "涉及危险化学品"
+    salience 90
+    when
+        $project : ExperimentProject(hasDangerousChemicals == true)
+    then
+        RiskFactor factor = new RiskFactor("危险化学品", 20, "实验涉及危险化学品", "涉及危险化学品");
+        result.addRiskFactor(factor);
+        result.addSuggestion("需提供危险化学品清单和MSDS(化学品安全说明书)");
+        result.addSuggestion("需在通风橱中操作");
+end
+
+// ========== 规则3: 生物安全高等级 ==========
+rule "生物安全高等级"
+    salience 95
+    when
+        $project : ExperimentProject(
+            hasBioSafety == true,
+            bioSafetyLevel != null,
+            bioSafetyLevel >= 3
+        )
+    then
+        RiskFactor factor = new RiskFactor("生物安全三级以上", 35, "生物安全等级为3级或4级", "生物安全高等级");
+        result.addRiskFactor(factor);
+        result.addSuggestion("必须在BSL-3或BSL-4实验室进行");
+        result.addSuggestion("需报备生物安全委员会");
+        result.addSuggestion("操作人员需接受生物安全培训并通过考核");
+end
+
+// ========== 规则4: 涉及辐射 ==========
+rule "涉及辐射"
+    salience 90
+    when
+        $project : ExperimentProject(hasRadiation == true)
+    then
+        RiskFactor factor = new RiskFactor("辐射实验", 25, "实验涉及放射性物质", "涉及辐射");
+        result.addRiskFactor(factor);
+        result.addSuggestion("需持有辐射工作许可证");
+        result.addSuggestion("必须佩戴个人剂量计");
+        result.addSuggestion("需定期进行辐射监测");
+end
+
+// ========== 规则5: 人员无资质 ==========
+rule "人员无资质"
+    salience 100
+    when
+        $project : ExperimentProject(hasQualification == false)
+    then
+        RiskFactor factor = new RiskFactor("人员资质不足", 40, "操作人员不具备相应资质", "人员无资质");
+        result.addRiskFactor(factor);
+        result.addSuggestion("必须先进行岗前培训并通过考核");
+        result.addSuggestion("高风险操作需由持证人员指导");
+end
+
+// ========== 规则6: 无应急预案 ==========
+rule "无应急预案"
+    salience 100
+    when
+        $project : ExperimentProject(
+            hasEmergencyPlan == false,
+            dangerLevel.code >= 3
+        )
+    then
+        RiskFactor factor = new RiskFactor("缺少应急预案", 30, "危险等级较高但无应急预案", "无应急预案");
+        result.addRiskFactor(factor);
+        result.addSuggestion("必须制定详细的应急预案");
+        result.addSuggestion("需进行应急演练");
+end
+
+// ========== 规则7: 大规模实验 ==========
+rule "大规模实验"
+    salience 50
+    when
+        $project : ExperimentProject(
+            participantCount >= 20,
+            duration >= 4
+        )
+    then
+        RiskFactor factor = new RiskFactor("大规模长时间实验", 15, "参与人数超过20人且时长超过4小时", "大规模实验");
+        result.addRiskFactor(factor);
+        result.addSuggestion("需配备足够的安全员");
+        result.addSuggestion("建议分批次进行");
+end
+
+// ========== 规则8: 辐射类型实验 ==========
+rule "辐射类型实验"
+    salience 80
+    when
+        $project : ExperimentProject(experimentType == ExperimentType.RADIATION)
+    then
+        RiskFactor factor = new RiskFactor("辐射类型", 30, "实验类型为辐射实验", "辐射类型实验");
+        result.addRiskFactor(factor);
+        result.addSuggestion("需在专门的辐射实验室进行");
+end
+
+// ========== 规则9: 激光实验 ==========
+rule "激光实验"
+    salience 70
+    when
+        $project : ExperimentProject(experimentType == ExperimentType.LASER)
+    then
+        RiskFactor factor = new RiskFactor("激光实验", 20, "实验涉及激光设备", "激光实验");
+        result.addRiskFactor(factor);
+        result.addSuggestion("必须佩戴激光防护眼镜");
+        result.addSuggestion("实验区域需设置警示标识");
+end
+
+// ========== 规则10: 高压实验 ==========
+rule "高压实验"
+    salience 75
+    when
+        $project : ExperimentProject(experimentType == ExperimentType.HIGH_PRESSURE)
+    then
+        RiskFactor factor = new RiskFactor("高压实验", 25, "实验涉及高压设备", "高压实验");
+        result.addRiskFactor(factor);
+        result.addSuggestion("高压设备需定期检测");
+        result.addSuggestion("操作人员需保持安全距离");
+end
+
+// ========== 规则11: 高温实验 ==========
+rule "高温实验"
+    salience 70
+    when
+        $project : ExperimentProject(experimentType == ExperimentType.HIGH_TEMP)
+    then
+        RiskFactor factor = new RiskFactor("高温实验", 20, "实验涉及高温操作", "高温实验");
+        result.addRiskFactor(factor);
+        result.addSuggestion("需佩戴耐高温手套");
+        result.addSuggestion("实验室需配备灭火器");
+end
+
+// ========== 规则12: 一般危险等级 ==========
+rule "一般危险"
+    salience 30
+    when
+        $project : ExperimentProject(dangerLevel == DangerLevel.LEVEL_2)
+    then
+        RiskFactor factor = new RiskFactor("一般危险", 10, "危险等级为2级", "一般危险");
+        result.addRiskFactor(factor);
+        result.addSuggestion("需遵守实验室安全规范");
+end
+
+// ========== 规则13: 较大危险 ==========
+rule "较大危险"
+    salience 40
+    when
+        $project : ExperimentProject(dangerLevel == DangerLevel.LEVEL_3)
+    then
+        RiskFactor factor = new RiskFactor("较大危险", 15, "危险等级为3级", "较大危险");
+        result.addRiskFactor(factor);
+        result.addSuggestion("需由教师现场指导");
+end
